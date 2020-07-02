@@ -1,0 +1,345 @@
+
+--SQLServer2012 Lab6
+--1.	Create a cursor for Employee table that increases Employee salary by 10% if Salary <3000 
+--and increases it by 20% if Salary >=3000. Use company DB
+declare csal cursor 
+for select employee.Salary from Employee
+for update
+
+declare @sal int
+
+open csal
+fetch csal into @sal
+begin 
+while @@FETCH_STATUS=0
+begin
+	fetch csal into @sal
+	if @sal<3000
+		update Employee set Salary= @sal*1.10 
+		where current of csal
+	else
+		update Employee set Salary= @sal*1.20 
+		where current of csal
+		end
+end
+close csal 
+deallocate csal
+
+select * from Employee
+
+
+
+--2.	Display Department name with its manager name using cursor. Use ITI DB
+create view v_dept_mgr as
+select d.Dname,e.Fname
+from Employee e ,Departments d
+where e.SSN=d.MGRSSN 
+
+select * from v_dept_mgr
+
+declare c_dept_mgr cursor
+	for select * from v_dept_mgr
+	for read only
+declare @dname varchar(50)
+declare @mgr_name varchar(50)
+
+open c_dept_mgr
+fetch c_dept_mgr into @dname ,@mgr_name
+begin
+while @@FETCH_STATUS=0
+begin 
+select @dname,@mgr_name
+fetch c_dept_mgr into @dname ,@mgr_name
+end
+end
+close c_dept_mgr
+deallocate c_dept_mgr
+
+
+--3.	Try to display all students first name in one cell separated by comma. Using Cursor 
+declare c_name cursor
+	for select st_fname from student
+	for read only
+declare @allnames varchar(200)='', @fname varchar(50)=''
+open c_name
+	
+	fetch c_name into @fname
+	while @@FETCH_STATUS=0
+		begin
+		set @allnames = CONCAT(@allnames,',',@fname) 
+		fetch c_name into @fname
+
+		end
+	
+	close c_name
+	deallocate c_name
+	select @allnames
+
+
+
+
+--4.	Create full, differential Backup for SD30_Company DB.
+--done
+
+--5.	Use import export wizard to display students data (ITI DB) in excel sheet
+--done
+/*
+right click on database -->tasks-->export data
+sql server import export wizard
+choose data source (sql server native client and servername)(auth. method-->win.)(database -->iti)
+choose destination (msexcel)(file path,the file needs to be created)(excel version)
+choose table copy or a result set from a query
+
+*/
+--6.	Try to generate script from DB ITI that describes all tables and views in this DB
+--
+select * 
+from information_schema.columns
+
+exec sp_columns student
+
+/*
+declare @tablename varchar(20)=''
+declare cparse cursor
+for select COLUMN_NAME 
+	 from information_schema.columns
+	 for read only
+open cparse
+fetch cparse into @tablename
+
+
+SELECT
+   SCHEMA_NAME(tbl.schema_id) AS SchemaName,	
+   tbl.name AS TableName, 
+   p.name AS ExtendedPropertyName,
+   CAST(p.value AS sql_variant) AS ExtendedPropertyValue
+FROM
+   sys.tables AS tbl
+   INNER JOIN sys.extended_properties AS p ON p.major_id=tbl.object_id AND p.minor_id=0 AND p.class=1
+   */
+
+--7.	Create a sequence object that allow values from 1 to 10 without cycling in a 
+--specific column and test it.
+create table seq (seqop int ,seqname varchar(20) not null default 'abc')
+
+alter sequence cont
+increment by 1
+maxvalue 10
+no cycle
+no cache;
+
+declare @X int =1
+while @x<11
+insert into seq(seqop)
+values (next value for cont)
+
+select * from seq
+
+/*
+8.	Write a report to display difference between the following objects in SQL Server
+1.	batch, script and transaction
+
+script is a file that contains multiple sql statment
+batch is a number of sql statments that run sequentially one after the other and you can rollback any one of them separetly
+transaction is a number of sql statement that need to be all excuted succsefully  for any of them to be committed to the database 
+
+2.	trigger and stored procedure
+A stored procedure is a user defined pre-compiled code,  that is invoked by calling it explicitly.
+
+A trigger is a stored procedure that runs automatically when various events happen (eg update, insert, delete).
+
+3.	stored procedure and functions
+function is a user defined code that can take parameters and return a value ,a way of getting dynamic result sets
+stored procedure is a user defined pre-compiled code where when excuted the first time this compilation is saved to save time, it can take parameters as input or output
+
+
+----------------------------------------------------------------
+
+4.	drop, truncate and delete statement
+
+TRUNCATE
+TRUNCATE SQL query removes all rows from a table, without logging the individual row deletions. 
+ 
+The following example removes all data from the Customers table. 
+TRUNCATE TABLE Customers;   
+TRUNCATE is a DDL command
+TRUNCATE is executed using a table lock and whole table is locked for remove all records.
+We cannot use WHERE clause with TRUNCATE.
+TRUNCATE removes all rows from a table.
+Minimal logging in transaction log, so it is faster performance wise.
+TRUNCATE TABLE removes the data by deallocating the data pages used to store the table data and records only the page deallocations in the transaction log.
+Identify column is reset to its seed value if table contains any identity column.
+To use Truncate on a table you need at least ALTER permission on the table.
+Truncate uses less transaction space than the Delete statement.
+Truncate cannot be used with indexed views.
+TRUNCATE is faster than DELETE.
+DELETE
+To execute a DELETE queue, delete permissions are required on the target table. If you need to use a WHERE clause in a DELETE, select permissions are required as well.
+ 
+The following query deletes all rows from the Customers table.  
+DELETE FROM Customers;  
+GO
+The following SQL query deletes all rows from the Customers table where OrderID is greater than 1000. 
+DELETE FROM Customers WHERE OrderId > 1000;  
+GO  
+DELETE is a DML command.
+DELETE is executed using a row lock, each row in the table is locked for deletion.
+We can use where clause with DELETE to filter & delete specific records.
+The DELETE command is used to remove rows from a table based on WHERE condition.
+It maintain the log, so it slower than TRUNCATE.
+The DELETE statement removes rows one at a time and records an entry in the transaction log for each deleted row.
+Identity of column keep DELETE retains the identity.
+To use Delete you need DELETE permission on the table.
+Delete uses the more transaction space than Truncate statement.
+Delete can be used with indexed views.
+DROP
+ 
+DROP table query removes one or more table definitions and all data, indexes, triggers, constraints, and permission specifications for those tables. DROP command requires ALTER permission on the schema to which the table belongs, CONTROL permission on the table, or membership in the db_ddladmin fixed database role.
+ 
+The following SQL query drops the Customers table and its data and indexes from the current database. 
+DROP TABLE Customers ;  
+The DROP command removes a table from the database.
+All the tables' rows, indexes and privileges will also be removed.
+No DML triggers will be fired.
+The operation cannot be rolled back.
+DROP and TRUNCATE are DDL commands, whereas DELETE is a DML command.
+DELETE operations can be rolled back (undone), while DROP and TRUNCATE operations cannot be rolled back
+-----------------------------------------------------------------
+
+
+5.	select and select into statement
+select only display the result sets and it is dql
+select into is used to select a result set and insert the output of this select statment into a different table so it is considered a dml
+ 
+6.	local and global variables
+SQL Server local variables are declared using the DECLARE statement, and exist for the duration of the 
+batch in which they are declared.They are declared with @ prefix.
+
+SQL Server provides a massive number of global variables, which are very effective to use in our regular 
+Transact-SQL. 
+
+Global variables represent a special type of variable. The server always maintain the values of these variables. 
+All the global variables represent information specific to the server or a current user session.
+Global variable names begin with a @@ prefix. You do not need to declare them, 
+since the server constantly maintains them. They are system-defined functions and you cannot declare them.
+
+7.	convert and cast statements
+CAST is part of the ANSI-SQL specification; whereas, CONVERT is not.  In fact, CONVERT is SQL implementation specific.
+
+CONVERT differences lie in that it accepts an optional style parameter which is used for formatting.
+
+For example, when converting a DateTime datatype to Varchar, you can specify the resulting date’s format, such as YYYY/MM/DD or MM/DD/YYYY.
+
+8.	DDL,DML,DCL,DQL and TCL
+
+
+9.	For xml raw and for xml auto
+XML RAW : each row in the result set is taken as one element with your columns being the attributes.
+XML AUTO : Table names are your elements
+ 
+
+10.	Table valued and multi statemcent function
+
+Table valued :
+-user-defined function that returns data type as table.
+-it is known as inline table-valued function.
+-it’s body is select statement as view.
+Multi statement :
+-return table.
+-it’s body insert based on select as(if ,while ,declare)
+
+11.	Varchar(50) and varchar(max)
+
+Varchar(50) :
+- not Unicode and takes 1 byte per char .
+-use it when you know size of character you will use.
+
+Varchar(max):
+- new keyword (post sql 2005) which is a variable length of unlimited size 
+   string.
+-can store up to 8000 character.
+
+12.	Datetime(3), datetime2(7) and datetimeoffset(7)
+
+Datatime (3): data type can store milliseconds
+Datatime2(7):use data type up to 7 digit.
+Dataeimeoffest (7): Defines a date that is combined with a time of a day that has time zone awareness and is based on a 24-hour clock.
+
+13.	Default instance and named instance
+
+Default instance: When SQL Server 2005 is installed in the default instance, it does not require a client to specify the name of the instance to make a connection. 
+Named instance: identified by the network name of the computer plus the instance name that you specify during installation.
+
+14.	SQL and windows Authentication
+
+Sql authentication:
+-If the user has already been authenticated by the Windows system, SQL Server 
+   does not ask for a password.
+-SQL Server authentication creates user logins unrelated to Windows.
+Windows authentication:
+-requires users to provide a valid Windows username and password to access the 
+   database server.
+
+15.	Clustered and non-clustered index
+
+Clustered index:
+-defines the order in which data is physically stored in a table.
+-only one clustered index per table and primary key outomatically creates 
+  clustered index.
+Non-clustered index:
+-doesn’t sort the physical data inside the table.
+-sorted in one place similar to textbook.
+-allow more than one non-clustered index in table.
+
+16.	Group by rollup and group by cube
+
+Rollup :
+-operator is used to calculate sub-totals and grand totals for a set of columns .
+Cube: 
+-operator is also used in combination and  generating all combinations of columns.
+
+17.	Sequence object and identity 
+
+Sequence :
+-defined by the user and can be shared by multiple tables.
+-the next VALUE for a SEQUENCE object can simply be generated using the next 
+  value.
+-the value can be reset.
+-maximum value for a SEQUENCE object can be defined.
+Identity:
+-is tied to a particular table and cannot be shared among multiple tables.
+-To generate the next IDENTITY value, a new row has to be inserted into the table.
+-cannot be reset to its initial value.
+-A maximum value cannot be set for the IDENTITY property. 
+
+18.	 Inline function and view
+
+Inline :
+-function work like stored procesure it will be similar to view.
+-contain only select statement.
+View :
+-virtual table based on the result-set of an SQL statement.
+-The fields in a view are fields from one or more real tables in the database.
+-You can add SQL functions, WHERE, and JOIN statements to a view.
+
+19.	Table variable and temporary table
+
+Table variable:
+-acts like a variable and exists for a particular batch of query execution.
+-It gets dropped once it comes out of batch.
+Temporary table:
+-physically created in the tempdb database.
+-act as the normal table and also can have constraints, index like normal tables.
+
+20.Row_number() function and dense_Rank() 
+
+Row_number():
+-function is when there are duplicate values in the column being used in ORDER 
+BY Clause.
+-function has no concern with ranking.
+Dense_Rank():
+-function does not skip ranks if there is a tie between ranks.
+
+
+
+*/

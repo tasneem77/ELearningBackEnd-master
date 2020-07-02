@@ -1,0 +1,135 @@
+use Company_SD
+--1
+select d.Dependent_name ,d.Sex 
+from Dependent d  inner join Employee e
+on d.ESSN = e.SSN
+where d.Sex='f' and e.Sex='f'
+
+union
+
+select d.Dependent_name ,d.Sex 
+from Dependent d  inner join Employee e
+on d.ESSN = e.SSN
+where d.Sex='m' and e.Sex='m'
+
+--2
+
+select sum(Hours),p.Pname
+from Project p inner join Works_for w
+on p.Pnumber=w.Pno
+group by p.Pname
+
+--3
+
+select d.*
+from Departments d , Employee e
+where d.Dnum=e.Dno
+and e.SSN in (select MIN(SSN) from Employee)
+
+--4
+select min(Salary),MAX(Salary), AVG(Salary),d.Dname
+from  Employee e , Departments d
+where e.Dno=d.Dnum
+group by d.Dname
+
+--5xxxxxxxxxxxxxxxxxxx
+select e.Fname+' ' +e.Lname as name
+from Employee e inner join Departments d
+on e.SSN=d.MGRSSN
+and e.SSN not in (select essn from Dependent)
+except
+select e.Fname+' ' +e.Lname as name
+from Dependent d , Employee e
+where e.SSN=d.ESSN
+
+--6
+select  d.Dname,d.Dnum ,COUNT(e.SSN),AVG(e.Salary)
+from Employee e , Departments d
+where e.Dno=d.Dnum
+group by  d.dname,d.Dnum
+having avg(salary) < (
+select AVG( e.Salary)
+from Employee e)
+
+--7 ??? list countxxxxxxxxxxxxxxxxxxxxxx
+select count(e.SSN),e.Dno,w.Pno
+from Works_for w, Employee e
+where w.ESSn=e.SSN
+group by e.Dno,w.Pno
+----------
+-----7
+select e.fname,e.Lname,w.Pno,e.Dno
+from Employee e
+join Works_for w on w.ESSn=e.SSN
+order by e.Dno,e.Fname,e.Lname
+
+--8
+select MAX(Salary)
+from Employee e
+
+union
+
+select MAX(Salary)
+from Employee e
+ where e.Salary< (select MAX(e.Salary)
+from Employee e)
+---------8
+
+
+----------------
+
+--9
+select e.Fname+' ' +e.Lname as name
+from Employee e
+intersect
+select d.Dependent_name
+from Dependent d
+
+--10xxxxxxxxxxxxxxxxx join
+update Employee  set Salary+=(Salary*0.3) where Employee.ssn 
+in 
+(
+select w.ESSn
+from Works_for w,Project p
+where p.Pnumber=w.Pno and p.Pname like 'al rabwah'
+)
+
+--11
+select e.SSN, e.Fname
+from Employee e 
+where exists (select d.ESSN from Dependent d where e.SSN=d.ESSN)
+
+
+
+
+--dml
+
+-----1
+
+insert into
+ Departments (Dname,Dnum,MGRSSN,[MGRStart Date])
+ values('DEPT IT',100,112233,1-11-2006)
+
+ ----------2
+
+ 
+update Departments 
+ set MGRSSN=102672
+
+ where Departments.Dnum=100
+
+ 
+update Employee 
+ set Superssn=102672
+
+ where Employee.SSN=102660
+
+
+
+
+ xxxxxxxxxxxxxxxxx
+ xxxxxxxxxxxxxxxxxx
+ xxxxxxxxxxxxxxx
+
+
+

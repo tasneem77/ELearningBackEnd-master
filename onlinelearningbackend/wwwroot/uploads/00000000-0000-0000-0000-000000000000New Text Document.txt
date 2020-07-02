@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void swap_p(char**a,char**b)
+{
+    char* temp;
+    temp=*a;
+    *a=*b;
+    *b=temp;
+
+}
+
+int main()
+{
+    char moh[20]="Muhammad";
+    char ahm[20]="Ahmed";
+
+    char *pmoh,*pahm,*temp;
+    pmoh=moh;
+    pahm=ahm;
+
+    printf("%s\n",pmoh);
+    printf("%s\n",pahm);
+
+    swap_p(&pmoh,&pahm);
+
+    /*
+    pmoh^=pahm;
+    pahm^=pmoh;
+    pmoh^=pahm;
+    */
+    printf("%s\n",pmoh);
+    printf("%s\n",pahm);
+
+
+    return 0;
+}
